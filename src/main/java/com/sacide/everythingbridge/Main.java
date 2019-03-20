@@ -16,83 +16,91 @@ public class Main {
     
     public static void main(String[] progArgs) {
         //System.out.println(new File("/users.prop").getAbsolutePath());
-        SHTMLServer server = new SHTMLServer(8889) {
-            @Override
-            public void handleMessage(SHTMLServerThread t, String line) {
-                boolean printMessage = true;
-                if(line == null) return;
-                String[] req = line.split(" ");
-                try {
-                    switch(req[0]) {
-                        case "GET":
-                            if(req[1].equals("/")) {
-                                t.sendHTML(true, getLoginPage());
-                                
-                            } else if(req[1].startsWith("/home.html")) {
-                                String args = req[1].split("\\?")[1];
-                                HashMap<String, String> map = parseArgs(args);
-                                boolean auth = false;
-                                int token=0;
-                                if(args.startsWith("token=")) {
-                                    token = Integer.parseInt(args.split("=")[1]);
-                                    auth = checkToken(token);
-                                } else if(um.checkPassword(map.get("uname"), map.get("psw"))) {
-                                    token = newToken();
-                                    auth = true;
+        try {
+            SHTMLServer server = new SHTMLServer(
+                    8889, 
+                    pe.getParamAsString(ParamEditorV.SSL_KEY_FILE), 
+                    pe.getParamAsString(ParamEditorV.SSL_KEY_ALIAS), 
+                    pe.getParamAsString(ParamEditorV.SSL_KEY_STORE_PASS), 
+                    pe.getParamAsString(ParamEditorV.SSL_KEYPASS)) {
+                @Override
+                public void handleMessage(SHTMLServerThread t, String line) {
+                    boolean printMessage = true;
+                    if(line == null) return;
+                    String[] req = line.split(" ");
+                    try {
+                        switch(req[0]) {
+                            case "GET":
+                                if(req[1].equals("/")) {
+                                    t.sendHTML(true, getLoginPage());
+
+                                } else if(req[1].startsWith("/home.html")) {
+                                    HashMap<String, String> map = parseArgs(req[1]);
+                                    boolean auth = false;
+                                    int token=0;
+                                    if(map.containsKey("token")) { //validate token if provided
+                                        token = Integer.parseInt(map.getOrDefault("token","-1"));
+                                        auth = checkToken(token);
+                                    } else if(um.checkPassword(map.get("uname"), map.get("psw"))) { // validate password
+                                        token = newToken();
+                                        auth = true;
+                                    }
+                                    t.sendHTML(auth, getHomePage(token));
+
+                                } else if(req[1].startsWith("/custom.html")) {
+                                    HashMap<String, String> map = parseArgs(req[1]);
+                                    int token = Integer.parseInt(map.getOrDefault("token","-1"));
+                                    t.sendHTML(checkToken(token), getCustomPage(token));
+
+                                } else if(req[1].startsWith("/mouse.html")) {
+                                    HashMap<String, String> map = parseArgs(req[1]);
+                                    int token = Integer.parseInt(map.getOrDefault("token","-1"));
+                                    t.sendHTML(checkToken(token), getMousePage(token));
+
+                                } else if(req[1].startsWith("/power.html")) {
+                                    HashMap<String, String> map = parseArgs(req[1]);
+                                    int token = Integer.parseInt(map.getOrDefault("token","-1"));
+                                    t.sendHTML(checkToken(token), getPowerPage(token));
+
+                                } else if(req[1].startsWith("/netflix.html")) {
+                                    HashMap<String, String> map = parseArgs(req[1]);
+                                    int token = Integer.parseInt(map.getOrDefault("token","-1"));
+                                    t.sendHTML(checkToken(token), getNetflixPage(token));
+
+                                } else if(req[1].startsWith("/virtualjoystick.js")) {
+                                    t.sendHTML(true, "text/javascript", getVirtualJoystick());
                                 }
-                                t.sendHTML(auth, getHomePage(token));
+                                break;
                                 
-                            } else if(req[1].startsWith("/custom.html")) {
-                                String args = req[1].split("\\?")[1].split("=")[1];
-                                int token = Integer.parseInt(args);
-                                t.sendHTML(checkToken(token), getCustomPage(token));
-                                
-                            } else if(req[1].startsWith("/mouse.html")) {
-                                String args = req[1].split("\\?")[1].split("=")[1];
-                                int token = Integer.parseInt(args);
-                                t.sendHTML(checkToken(token), getMousePage(token));
-                                
-                            } else if(req[1].startsWith("/power.html")) {
-                                String args = req[1].split("\\?")[1].split("=")[1];
-                                int token = Integer.parseInt(args);
-                                t.sendHTML(checkToken(token), getPowerPage(token));
-                                
-                            } else if(req[1].startsWith("/netflix.html")) {
-                                String args = req[1].split("\\?")[1].split("=")[1];
-                                int token = Integer.parseInt(args);
-                                t.sendHTML(checkToken(token), getNetflixPage(token));
-                                
-                            } else if(req[1].startsWith("/sendMessage.html")) {
-                                String args = req[1].split("\\?")[1];
-                                HashMap<String, String> map = parseArgs(args);
-                                int token = Integer.parseInt(map.get("token"));
-                                boolean auth = checkToken(token);
-                                if(auth) {
-                                    printMessage = doAction(map);
+                            case "POST":
+                                if(req[1].startsWith("/sendMessage.html")) {
+                                    HashMap<String, String> map = parseArgs(req[1]);
+                                    int token = Integer.parseInt(map.getOrDefault("token","-1"));
+                                    if(checkToken(token)) {
+                                        printMessage = doAction(map);
+                                    }
                                 }
-                            } else if(req[1].startsWith("/virtualjoystick.js")) {
-                                t.sendHTML(true, "text/javascript", getVirtualJoystick());
-                            }
-                            break;
-                        case "POST":
-                            
-                            break;
-                        default:
-                            break;
+                                break;
+                                
+                            default:
+                                break;
+                        }
+                    } catch(Exception e) {
+                        Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, e);
                     }
-                } catch(Exception e) {
-                    Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, e);
+                    if(printMessage) {
+                        Calendar cal = Calendar.getInstance();
+                        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+                        System.out.println(sdf.format(cal.getTime()) + "   " + line);
+                    }
                 }
-                if(printMessage) {
-                    Calendar cal = Calendar.getInstance();
-                    SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
-                    System.out.println(sdf.format(cal.getTime()) + "   " + line);
-                }
-            }
-        };
-        SHTMLServerGUI gui = new SHTMLServerGUI(server, um, pe);
-        gui.setIcon("/PC Controller Icon.png");
-        gui.show();
+            };
+            SHTMLServerGUI gui = new SHTMLServerGUI(server, um, pe);
+            gui.setIcon("/PC Controller Icon.png");
+            gui.show();
+        } catch(Exception ex) {
+            Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
     
     public static String getLoginPage() {
@@ -122,7 +130,7 @@ public class Main {
     }
     
     public static String getCustomPage(int token) {
-        return  "<form action=\"sendMessage.html\">\n" +
+        return  "<form action=\"sendMessage.html\" method=\"post\">\n" +
                 "  <div class=\"container\">\n" +
                 "    <input type=\"hidden\" name=\"token\" value=\""+token+"\" />" +
                 
@@ -190,7 +198,7 @@ public class Main {
                 "                \n" +
                 "                if(joystick.deltaX() != 0 && joystick.deltaX() != 0) {\n" +
                 "                    var xmlHttp = new XMLHttpRequest();\n" +
-                "                    xmlHttp.open(\"GET\", \"sendMessage.html?token="+token+"&action="+MOUSE_MOVEBY+"&arg1=\"+joystick.deltaX()+\"&arg2=\"+joystick.deltaY(), false ); // false for synchronous request\n" +
+                "                    xmlHttp.open(\"POST\", \"sendMessage.html?token="+token+"&action="+MOUSE_MOVEBY+"&arg1=\"+joystick.deltaX()+\"&arg2=\"+joystick.deltaY(), false ); // false for synchronous request\n" +
                 "                    xmlHttp.send( null );\n" +
                 "                    return xmlHttp.responseText;\n" +
                 "                }\n" +
@@ -198,19 +206,19 @@ public class Main {
                 "        </script>\n" +
                 
                 "        <iframe width=\"0\" height=\"0\" border=\"0\" name=\"dummyframe\" id=\"dummyframe\"></iframe>\n" +
-                "        <form action=\"sendMessage.html\" target=\"dummyframe\">\n" +
+                "        <form action=\"sendMessage.html\" method=\"post\" target=\"dummyframe\">\n" +
                 "            <input type=\"hidden\" name=\"token\" value=\""+token+"\" />" +
                 "            <input type=\"hidden\" name=\"action\" value=\""+MOUSE_CLICK+"\" />" +
                 "            <input type=\"hidden\" name=\"arg1\" value=\"1\" />" +
                 "            <button type=\"submit\">Left</button>\n" +
                 "        </form>" +
-                "        <form action=\"sendMessage.html\" target=\"dummyframe\">\n" +
+                "        <form action=\"sendMessage.html\" method=\"post\" target=\"dummyframe\">\n" +
                 "            <input type=\"hidden\" name=\"token\" value=\""+token+"\" />" +
                 "            <input type=\"hidden\" name=\"action\" value=\""+MOUSE_CLICK+"\" />" +
                 "            <input type=\"hidden\" name=\"arg1\" value=\"3\" />" +
                 "            <button type=\"submit\">Middle</button>\n" +
                 "        </form>" +
-                "        <form action=\"sendMessage.html\" target=\"dummyframe\">\n" +
+                "        <form action=\"sendMessage.html\" method=\"post\" target=\"dummyframe\">\n" +
                 "            <input type=\"hidden\" name=\"token\" value=\""+token+"\" />" +
                 "            <input type=\"hidden\" name=\"action\" value=\""+MOUSE_CLICK+"\" />" +
                 "            <input type=\"hidden\" name=\"arg1\" value=\"2\" />" +
@@ -270,7 +278,7 @@ public class Main {
     
     public static String getPowerPage(int token) {
         return  "        <iframe width=\"0\" height=\"0\" border=\"0\" name=\"dummyframe\" id=\"dummyframe\"></iframe>\n" +
-                "        <form action=\"sendMessage.html\" target=\"dummyframe\">\n" +
+                "        <form action=\"sendMessage.html\" method=\"post\" target=\"dummyframe\">\n" +
                 "            <input type=\"hidden\" name=\"token\" value=\""+token+"\" />" +
                 "            <input type=\"hidden\" name=\"action\" value=\""+POWER_HIBERNATE+"\" />" +
                 "            <button type=\"submit\">Hibernate</button>\n" +
@@ -279,17 +287,17 @@ public class Main {
     
     public static String getNetflixPage(int token) {
         return  "        <iframe width=\"0\" height=\"0\" border=\"0\" name=\"dummyframe\" id=\"dummyframe\"></iframe>\n" +
-                "        <form action=\"sendMessage.html\" target=\"dummyframe\">\n" +
+                "        <form action=\"sendMessage.html\" method=\"post\" target=\"dummyframe\">\n" +
                 "            <input type=\"hidden\" name=\"token\" value=\""+token+"\" />" +
                 "            <input type=\"hidden\" name=\"action\" value=\""+NETFLIX_SPACE+"\" />" +
                 "            <button type=\"submit\" style=\"height:100px; width:500px\">Space Bar</button>\n" +
                 "        </form>" +
-                "        <form action=\"sendMessage.html\" target=\"dummyframe\">\n" +
+                "        <form action=\"sendMessage.html\" method=\"post\" target=\"dummyframe\">\n" +
                 "            <input type=\"hidden\" name=\"token\" value=\""+token+"\" />" +
                 "            <input type=\"hidden\" name=\"action\" value=\""+NETFLIX_FWD+"\" />" +
                 "            <button type=\"submit\" style=\"height:100px; width:500px\">Forward</button>\n" +
                 "        </form>" +
-                "        <form action=\"sendMessage.html\" target=\"dummyframe\">\n" +
+                "        <form action=\"sendMessage.html\" method=\"post\" target=\"dummyframe\">\n" +
                 "            <input type=\"hidden\" name=\"token\" value=\""+token+"\" />" +
                 "            <input type=\"hidden\" name=\"action\" value=\""+NETFLIX_BCK+"\" />" +
                 "            <button type=\"submit\" style=\"height:100px; width:500px\">Backward</button>\n" +
@@ -738,39 +746,39 @@ public class Main {
     private static boolean doAction(HashMap<String, String> args) {
         switch(Integer.parseInt(args.get("action"))) {
             case VOLUME_SET:
-                PCFunctions.volumeSet(Integer.parseInt(args.get("arg1")));
+                //PCFunctions.volumeSet(Integer.parseInt(args.get("arg1")));
                 break;
             case VOLUME_CHANGE:
-                PCFunctions.volumeChange(Integer.parseInt(args.get("arg1")));
+                //PCFunctions.volumeChange(Integer.parseInt(args.get("arg1")));
                 break;
 
             case POWER_HIBERNATE:
-                PCFunctions.computerHibernate();
+                //PCFunctions.computerHibernate();
                 break;
 
             case NETFLIX_SPACE:
-                PCFunctions.sendKey(KeyEvent.VK_SPACE);
+                //PCFunctions.sendKey(KeyEvent.VK_SPACE);
                 break;
             case NETFLIX_FWD:
-                PCFunctions.sendKey(KeyEvent.VK_RIGHT);
+                //PCFunctions.sendKey(KeyEvent.VK_RIGHT);
                 break;
             case NETFLIX_BCK:
-                PCFunctions.sendKey(KeyEvent.VK_LEFT);
+                //PCFunctions.sendKey(KeyEvent.VK_LEFT);
                 break;
 
             case MOUSE_MOVEBY:
-                PCFunctions.mouseMoveBy(
+                /*PCFunctions.mouseMoveBy(
                         Double.parseDouble(args.get("arg1")),
-                        Double.parseDouble(args.get("arg2")));
+                        Double.parseDouble(args.get("arg2")));*/
                 return false;
             case MOUSE_MOVETO:
-                PCFunctions.mouseMoveTo(
+                /*PCFunctions.mouseMoveTo(
                         Integer.parseInt(args.get("arg1")),
-                        Integer.parseInt(args.get("arg2")));
+                        Integer.parseInt(args.get("arg2")));*/
                 break;
                 
             case MOUSE_CLICK:
-                PCFunctions.mouseClick(Integer.parseInt(args.get("arg1")));
+                //PCFunctions.mouseClick(Integer.parseInt(args.get("arg1")));
                 break;
         }
         return true;
