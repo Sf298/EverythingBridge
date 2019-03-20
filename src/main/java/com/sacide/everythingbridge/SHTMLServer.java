@@ -9,6 +9,7 @@ import com.sun.net.httpserver.HttpsConfigurator;
 import com.sun.net.httpserver.HttpsParameters;
 import com.sun.net.httpserver.HttpsServer;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -16,6 +17,7 @@ import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
@@ -29,8 +31,15 @@ import java.util.HashSet;
 import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLParameters;
+import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.SSLServerSocketFactory;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 
 /**
@@ -39,57 +48,22 @@ import javax.net.ssl.TrustManagerFactory;
  */
 public abstract class SHTMLServer {
     
-    private ServerSocket ss;
-    private final int port;
     public final ArrayList<SHTMLServerThread> clients = new ArrayList<>();
     public final HashSet<Integer> tokens = new HashSet<>();
+    
+    private final int port;
+    private final String keystoreFilename;
+    private final String storepass;
+    private final String keypass;
+    
+    private SSLServerSocket sslServerSocket;
     private Random r = new Random();
     
-    public SHTMLServer(int port, String keystoreFilename, String alias, String storepass, String keypass) {
+    public SHTMLServer(int port, String keystoreFilename, String storepass, String keypass) {
         this.port = port;
-        
-        try {
-            // load certificate
-            FileInputStream fIn = new FileInputStream(keystoreFilename);
-            KeyStore keystore = KeyStore.getInstance("JKS");
-            keystore.load(fIn, storepass.toCharArray());
-            // display certificate
-            /*Certificate cert = keystore.getCertificate(alias);
-            System.out.println(cert);*/
-            // setup the key manager factory
-            KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
-            kmf.init(keystore, keypass.toCharArray());
-            // setup the trust manager factory
-            TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
-            tmf.init(keystore);
-        } catch (IOException | KeyStoreException | NoSuchAlgorithmException | UnrecoverableKeyException | CertificateException ex) {
-            Logger.getLogger(SHTMLServer.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        
-        // create https server
-        server = HttpsServer.create(new InetSocketAddress(port), 0);
-        // create ssl context
-        SSLContext sslContext = SSLContext.getInstance(protocol);
-        // setup the HTTPS context and parameters
-        sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
-        server.setHttpsConfigurator(new HttpsConfigurator(sslContext) {
-            public void configure(HttpsParameters params) {
-                try {
-                    // initialise the SSL context
-                    SSLContext c = SSLContext.getDefault();
-                    SSLEngine engine = c.createSSLEngine();
-                    params.setNeedClientAuth(false);
-                    params.setCipherSuites(engine.getEnabledCipherSuites());
-                    params.setProtocols(engine.getEnabledProtocols());
-                    // get the default parameters
-                    SSLParameters defaultSSLParameters = c.getDefaultSSLParameters();
-                    params.setSSLParameters(defaultSSLParameters);
-                } catch (Exception ex) {
-                    ex.printStackTrace();
-                    System.out.println("Failed to create HTTPS server");
-                }
-            }
-        });
+        this.keystoreFilename = keystoreFilename;
+        this.storepass = storepass;
+        this.keypass = keypass;
     }
     
     public abstract void handleMessage(SHTMLServerThread t, String  m);
@@ -97,7 +71,9 @@ public abstract class SHTMLServer {
     public void start() {
         try {
             System.out.println("starting...");
-            ss = new ServerSocket(port);
+            SSLContext sslContext = this.createSSLContext();
+            SSLServerSocketFactory sslServerSocketFactory = sslContext.getServerSocketFactory();
+            sslServerSocket = (SSLServerSocket) sslServerSocketFactory.createServerSocket(this.port);
             
             System.out.println("Server can be accessed on address(es): \n"+getIPAdresses());
             System.out.println("Started server on port: "+port);
@@ -111,7 +87,7 @@ public abstract class SHTMLServer {
         while(true) {
             try {
                 //System.out.println("waiting for connection...");
-                Socket s = ss.accept();
+                SSLSocket s = (SSLSocket) sslServerSocket.accept();
                 SHTMLServerThread st = new SHTMLServerThread(this, s, r.nextInt());
                 st.setName("ST-Thread");
                 clients.add(st);
@@ -121,6 +97,32 @@ public abstract class SHTMLServer {
                 Logger.getLogger(SHTMLServer.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
+    }
+    
+    private SSLContext createSSLContext() {
+        try {
+            KeyStore keyStore = KeyStore.getInstance("JKS");
+            keyStore.load(new FileInputStream(keystoreFilename),storepass.toCharArray());
+            
+            // Create key manager
+            KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance("SunX509");
+            keyManagerFactory.init(keyStore, keypass.toCharArray());
+            KeyManager[] km = keyManagerFactory.getKeyManagers();
+            
+            // Create trust manager
+            TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance("SunX509");
+            trustManagerFactory.init(keyStore);
+            TrustManager[] tm = trustManagerFactory.getTrustManagers();
+            
+            // Initialize SSLContext
+            SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
+            sslContext.init(km, tm, null);
+            
+            return sslContext;
+        } catch (IOException | KeyManagementException | KeyStoreException | NoSuchAlgorithmException | UnrecoverableKeyException | CertificateException ex){
+            Logger.getLogger(SHTMLServer.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return null;
     }
     
     public String getIPAdresses() {
@@ -145,7 +147,7 @@ public abstract class SHTMLServer {
     public int newToken() {
         int t;
         do {
-            t = r.nextInt();
+            t = r.nextInt(Integer.MAX_VALUE);
         } while(tokens.contains(t));
         
         tokens.add(t);
@@ -162,6 +164,10 @@ public abstract class SHTMLServer {
     }
     
     public HashMap<String, String> parseArgs(String args) {
+        if(args.contains("?")) {
+            args = args.split("\\?")[1];
+        }
+        
         HashMap map = new HashMap();
         if(!args.contains("&")) {
             String[] temp = args.split("=");

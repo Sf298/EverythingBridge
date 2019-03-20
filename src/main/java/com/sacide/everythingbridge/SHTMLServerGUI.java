@@ -15,6 +15,9 @@ import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.io.PrintStream;
 import java.net.URL;
+import java.security.KeyManagementException;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.ImageIcon;
@@ -100,10 +103,12 @@ public class SHTMLServerGUI {
         frame.setSize(750, 500);
         frame.setVisible(true);
         
+        pe.show(frame);
+        
         /*try {
-            Thread.sleep(2000);
+        Thread.sleep(2000);
         } catch (InterruptedException ex) {
-            Logger.getLogger(ServerGUI.class.getName()).log(Level.SEVERE, null, ex);
+        Logger.getLogger(ServerGUI.class.getName()).log(Level.SEVERE, null, ex);
         }*/
         
         server.start();

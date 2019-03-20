@@ -36,9 +36,15 @@ public class Properties {
         this.separator = separator;
     }
     
-    public void cloneData(Properties p) {
-        p.separator = separator;
-        p.map = new HashMap(map);
+    public Properties(Properties p) {
+        file = p.file;
+        separator = p.separator;
+        map = new HashMap(map);
+    }
+    
+    public void cloneDataFrom(Properties p) {
+        separator = p.separator;
+        map = new HashMap(p.map);
     }
     
     

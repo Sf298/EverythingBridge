@@ -9,6 +9,7 @@ import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Map;
 import javax.swing.JButton;
 import javax.swing.JComponent;
@@ -33,10 +34,18 @@ public class ParamEditorV {
     
     public static final String MOUSE_DPI = "Mouse dpi";
     public static final String SSL_KEY_FILE = "SSL Keystore File";
+    public static final String SSL_KEY_ALIAS = "SSL Keystore Alias";
+    public static final String SSL_KEY_STORE_PASS = "SSL Keystore pass";
+    public static final String SSL_KEYPASS = "SSL Keypass";
     
     public ParamEditorV() {
         params = new Properties(new File("./params.prop"));
         params.put(MOUSE_DPI, "10");
+        System.out.println(new File("./").getAbsolutePath());
+        params.put(SSL_KEY_FILE, "D:\\Dropbox\\Java Projects\\EverythingBridge\\src\\main\\resources\\mykey.keystore");
+        params.put(SSL_KEY_ALIAS, "alias");
+        params.put(SSL_KEY_STORE_PASS, "123456");
+        params.put(SSL_KEYPASS, "abcdef");
         params.load();
     }
     
@@ -52,9 +61,27 @@ public class ParamEditorV {
                     return null;
                 else
                     return "Error: File not found";
+            case SSL_KEY_ALIAS:
+                    return null;
+            case SSL_KEY_STORE_PASS:
+                    return null;
+            case SSL_KEYPASS:
+                    return null;
             default:
-                return "Error";
+                return "Error: param not found";
         }
+    }
+    
+    private ArrayList<String> checkParamValues() {
+        ArrayList<String> errors = new ArrayList<String>();
+        for (Map.Entry<String, String> entry : params.getMap().entrySet()) {
+            String key = entry.getKey();
+            String value = entry.getValue();
+            String ret = checkParamValue(key, value);
+            if(ret == null) continue;
+            errors.add(key+" => "+ret);
+        }
+        return errors;
     }
     
     public int getParamAsInt(String param) {
@@ -65,6 +92,9 @@ public class ParamEditorV {
     }
     
     public void show(JFrame parentFrame) {
+        Properties oldMap = new Properties(params);
+        ArrayList<String> errors = null;
+        do {
             JPanel mainPanel = new JPanel(new BorderLayout());
                 model = new DefaultTableModel(new Object[1][2], new Object[] {"Parameter", "Value"}) {
                         @Override
@@ -73,11 +103,11 @@ public class ParamEditorV {
                         }
                 };
                 table = new JTable(model);
-                
+
                 mainPanel.add(new JScrollPane(table), BorderLayout.CENTER);
-                    
+
                 JPanel buttonPanel = new JPanel();
-                    JButton editButton = new JButton("Edit User");
+                    JButton editButton = new JButton("Edit Parameter");
                     editButton.addActionListener(new ActionListener() {
                         @Override
                         public void actionPerformed(ActionEvent e) {
@@ -87,12 +117,29 @@ public class ParamEditorV {
                     });
                     buttonPanel.add(editButton);
                 mainPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+            mapToTable();
+            final JComponent[] inputs = new JComponent[] {mainPanel};
+            int option = JOptionPane.showConfirmDialog(parentFrame, inputs, "Parameter Manager", JOptionPane.PLAIN_MESSAGE);
+            if(option == -1) {
+                params = oldMap;
+                return;
+            }
+            tableToMap();
+
+            errors = checkParamValues();
+            if(errors.isEmpty()) {
+                params.save();
+                return;
+            }
+            
+            String errorMsg = "";
+            for (String error : errors) {
+                errorMsg += error + "\n";
+            }
+            JOptionPane.showMessageDialog(null, errorMsg, "Error", JOptionPane.ERROR_MESSAGE);
+        } while(errors == null || !errors.isEmpty());
         
-        mapToTable();
-        final JComponent[] inputs = new JComponent[] {mainPanel};
-        JOptionPane.showConfirmDialog(parentFrame, inputs, "User Manager", JOptionPane.PLAIN_MESSAGE);
-        tableToMap();
-        params.save();
     }
     
     private void tableToMap() {

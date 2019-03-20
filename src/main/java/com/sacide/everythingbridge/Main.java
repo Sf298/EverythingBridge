@@ -19,9 +19,8 @@ public class Main {
         try {
             SHTMLServer server = new SHTMLServer(
                     8889, 
-                    pe.getParamAsString(ParamEditorV.SSL_KEY_FILE), 
-                    pe.getParamAsString(ParamEditorV.SSL_KEY_ALIAS), 
-                    pe.getParamAsString(ParamEditorV.SSL_KEY_STORE_PASS), 
+                    pe.getParamAsString(ParamEditorV.SSL_KEY_FILE),
+                    pe.getParamAsString(ParamEditorV.SSL_KEY_STORE_PASS),
                     pe.getParamAsString(ParamEditorV.SSL_KEYPASS)) {
                 @Override
                 public void handleMessage(SHTMLServerThread t, String line) {
@@ -96,7 +95,7 @@ public class Main {
                 }
             };
             SHTMLServerGUI gui = new SHTMLServerGUI(server, um, pe);
-            gui.setIcon("/PC Controller Icon.png");
+            gui.setIcon("./PC Controller Icon.png");
             gui.show();
         } catch(Exception ex) {
             Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, ex);
@@ -737,9 +736,9 @@ public class Main {
     public static final int MOUSE_MOVEBY  = 10; //                [pixel Pos, pixel Pos]
     public static final int MOUSE_MOVETO  = 11; //                [perecnt Pos, perecnt Pos]
 
-    public static final int NETFLIX_SPACE  = 20; //                []
-    public static final int NETFLIX_FWD  = 21; //                []
-    public static final int NETFLIX_BCK  = 22; //                []
+    public static final int NETFLIX_SPACE  = 20; //               []
+    public static final int NETFLIX_FWD  = 21; //                 []
+    public static final int NETFLIX_BCK  = 22; //                 []
     
     public static final int MOUSE_CLICK  = 4; //                  [mouse button]
     
@@ -747,38 +746,47 @@ public class Main {
         switch(Integer.parseInt(args.get("action"))) {
             case VOLUME_SET:
                 //PCFunctions.volumeSet(Integer.parseInt(args.get("arg1")));
+                System.out.println("VOLUME_SET");
                 break;
             case VOLUME_CHANGE:
                 //PCFunctions.volumeChange(Integer.parseInt(args.get("arg1")));
+                System.out.println("VOLUME_CHANGE");
                 break;
 
             case POWER_HIBERNATE:
                 //PCFunctions.computerHibernate();
+                System.out.println("POWER_HIBERNATE");
                 break;
 
             case NETFLIX_SPACE:
                 //PCFunctions.sendKey(KeyEvent.VK_SPACE);
+                System.out.println("NETFLIX_SPACE");
                 break;
             case NETFLIX_FWD:
                 //PCFunctions.sendKey(KeyEvent.VK_RIGHT);
+                System.out.println("NETFLIX_FWD");
                 break;
             case NETFLIX_BCK:
                 //PCFunctions.sendKey(KeyEvent.VK_LEFT);
+                System.out.println("NETFLIX_BCK");
                 break;
 
             case MOUSE_MOVEBY:
                 /*PCFunctions.mouseMoveBy(
                         Double.parseDouble(args.get("arg1")),
                         Double.parseDouble(args.get("arg2")));*/
+                System.out.println("MOUSE_MOVEBY");
                 return false;
             case MOUSE_MOVETO:
                 /*PCFunctions.mouseMoveTo(
                         Integer.parseInt(args.get("arg1")),
                         Integer.parseInt(args.get("arg2")));*/
+                System.out.println("MOUSE_MOVETO");
                 break;
                 
             case MOUSE_CLICK:
                 //PCFunctions.mouseClick(Integer.parseInt(args.get("arg1")));
+                System.out.println("MOUSE_CLICK");
                 break;
         }
         return true;

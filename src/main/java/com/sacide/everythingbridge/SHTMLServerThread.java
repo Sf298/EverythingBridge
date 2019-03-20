@@ -16,6 +16,8 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.SSLSocket;
 
 /**
  *
@@ -27,9 +29,14 @@ public class SHTMLServerThread extends Thread {
     private PrintWriter pw = null;
     private BufferedReader br = null;
 
-    SHTMLServerThread(SHTMLServer server, Socket s, int webToken) {
+    SHTMLServerThread(SHTMLServer server, SSLSocket s, int webToken) {
         this.server = server;
+        s.setEnabledCipherSuites(s.getSupportedCipherSuites());
+        for(String str  : s.getSupportedCipherSuites())
+            System.out.println(str);
         try {
+            s.startHandshake();
+            SSLSession sslSession = s.getSession();
             br = new BufferedReader(new InputStreamReader(s.getInputStream()));
             pw = new PrintWriter(s.getOutputStream());
             
