@@ -1,11 +1,11 @@
 package com.sacide.everythingbridge;
 
-import java.awt.event.KeyEvent;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import net.freeutils.httpserver.HTTPServer;
 
 public class Main {
     
@@ -17,83 +17,86 @@ public class Main {
     public static void main(String[] progArgs) {
         //System.out.println(new File("/users.prop").getAbsolutePath());
         try {
-            SHTMLServer server = new SHTMLServer(
-                    8889, 
+            SHTMLServer server = new SHTMLServer(8889, 
                     pe.getParamAsString(ParamEditorV.SSL_KEY_FILE),
                     pe.getParamAsString(ParamEditorV.SSL_KEY_STORE_PASS),
-                    pe.getParamAsString(ParamEditorV.SSL_KEYPASS)) {
-                @Override
-                public void handleMessage(SHTMLServerThread t, String line) {
-                    boolean printMessage = true;
-                    if(line == null) return;
-                    String[] req = line.split(" ");
-                    try {
-                        switch(req[0]) {
-                            case "GET":
-                                if(req[1].equals("/")) {
-                                    t.sendHTML(true, getLoginPage());
-
-                                } else if(req[1].startsWith("/home.html")) {
-                                    HashMap<String, String> map = parseArgs(req[1]);
-                                    boolean auth = false;
-                                    int token=0;
-                                    if(map.containsKey("token")) { //validate token if provided
-                                        token = Integer.parseInt(map.getOrDefault("token","-1"));
-                                        auth = checkToken(token);
-                                    } else if(um.checkPassword(map.get("uname"), map.get("psw"))) { // validate password
-                                        token = newToken();
-                                        auth = true;
-                                    }
-                                    t.sendHTML(auth, getHomePage(token));
-
-                                } else if(req[1].startsWith("/custom.html")) {
-                                    HashMap<String, String> map = parseArgs(req[1]);
-                                    int token = Integer.parseInt(map.getOrDefault("token","-1"));
-                                    t.sendHTML(checkToken(token), getCustomPage(token));
-
-                                } else if(req[1].startsWith("/mouse.html")) {
-                                    HashMap<String, String> map = parseArgs(req[1]);
-                                    int token = Integer.parseInt(map.getOrDefault("token","-1"));
-                                    t.sendHTML(checkToken(token), getMousePage(token));
-
-                                } else if(req[1].startsWith("/power.html")) {
-                                    HashMap<String, String> map = parseArgs(req[1]);
-                                    int token = Integer.parseInt(map.getOrDefault("token","-1"));
-                                    t.sendHTML(checkToken(token), getPowerPage(token));
-
-                                } else if(req[1].startsWith("/netflix.html")) {
-                                    HashMap<String, String> map = parseArgs(req[1]);
-                                    int token = Integer.parseInt(map.getOrDefault("token","-1"));
-                                    t.sendHTML(checkToken(token), getNetflixPage(token));
-
-                                } else if(req[1].startsWith("/virtualjoystick.js")) {
-                                    t.sendHTML(true, "text/javascript", getVirtualJoystick());
-                                }
-                                break;
-                                
-                            case "POST":
-                                if(req[1].startsWith("/sendMessage.html")) {
-                                    HashMap<String, String> map = parseArgs(req[1]);
-                                    int token = Integer.parseInt(map.getOrDefault("token","-1"));
-                                    if(checkToken(token)) {
-                                        printMessage = doAction(map);
-                                    }
-                                }
-                                break;
-                                
-                            default:
-                                break;
-                        }
-                    } catch(Exception e) {
-                        Logger.getLogger(Main.class.getName()).log(Level.SEVERE, null, e);
-                    }
-                    if(printMessage) {
-                        Calendar cal = Calendar.getInstance();
-                        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
-                        System.out.println(sdf.format(cal.getTime()) + "   " + line);
-                    }
+                    pe.getParamAsString(ParamEditorV.SSL_KEYPASS));
+            server.addContext("/sendMessage.html", (HTTPServer.Request req, HTTPServer.Response resp) -> {
+                int token = Integer.parseInt(req.getParams().getOrDefault("token","-1"));
+                if(!server.checkToken(token))
+                    resp.sendError(403);
+                else
+                    doAction(req.getParams());
+                resp.send(200, "ok");
+                resp.close();
+                return 0;
+            }, "POST");
+            server.addContext("/", (HTTPServer.Request req, HTTPServer.Response resp) -> {
+                resp.getHeaders().add("Content-Type", "text/html");
+                resp.send(200, getLoginPage());
+                resp.close();
+                return 0;
+            });
+            server.addContext("/home.html", (HTTPServer.Request req, HTTPServer.Response resp) -> {
+                boolean auth = false;
+                int token = -1;
+                if(req.getParams().containsKey("token")) { //validate token if provided
+                    token = Integer.parseInt(req.getParams().get("token"));
+                    auth = server.checkToken(token);
+                } else if(um.checkPassword(req.getParams().get("uname"), req.getParams().get("psw"))) { // validate password
+                    token = server.newToken();
+                    auth = true;
                 }
-            };
+                if(!auth) resp.sendError(403, "Invalid login");
+                
+                resp.getHeaders().add("Content-Type", "text/html");
+                resp.send(200, getHomePage(token));
+                resp.close();
+                return 0;
+            });
+            server.addContext("/custom.html", (HTTPServer.Request req, HTTPServer.Response resp) -> {
+                int token = Integer.parseInt(req.getParams().getOrDefault("token","-1"));
+                if(!server.checkToken(token))
+                    resp.sendError(403, "Invalid login");
+                resp.getHeaders().add("Content-Type", "text/html");
+                resp.send(200, getCustomPage(token));
+                resp.close();
+                return 0;
+            });
+            server.addContext("/mouse.html", (HTTPServer.Request req, HTTPServer.Response resp) -> {
+                int token = Integer.parseInt(req.getParams().getOrDefault("token","-1"));
+                if(!server.checkToken(token))
+                    resp.sendError(403, "Invalid login");
+                resp.getHeaders().add("Content-Type", "text/html");
+                resp.send(200, getMousePage(token));
+                resp.close();
+                return 0;
+            });
+            server.addContext("/power.html", (HTTPServer.Request req, HTTPServer.Response resp) -> {
+                int token = Integer.parseInt(req.getParams().getOrDefault("token","-1"));
+                if(!server.checkToken(token))
+                    resp.sendError(403, "Invalid login");
+                resp.getHeaders().add("Content-Type", "text/html");
+                resp.send(200, getPowerPage(token));
+                resp.close();
+                return 0;
+            });
+            server.addContext("/netflix.html", (HTTPServer.Request req, HTTPServer.Response resp) -> {
+                int token = Integer.parseInt(req.getParams().getOrDefault("token","-1"));
+                if(!server.checkToken(token))
+                    resp.sendError(403, "Invalid login");
+                resp.getHeaders().add("Content-Type", "text/html");
+                resp.send(200, getNetflixPage(token));
+                resp.close();
+                return 0;
+            });
+            server.addContext("/virtualjoystick.js", (HTTPServer.Request req, HTTPServer.Response resp) -> {
+                resp.getHeaders().add("Content-Type", "text/javascript");
+                resp.send(200, getVirtualJoystick());
+                resp.close();
+                return 0;
+            });
+            
             SHTMLServerGUI gui = new SHTMLServerGUI(server, um, pe);
             gui.setIcon("./PC Controller Icon.png");
             gui.show();
@@ -742,7 +745,7 @@ public class Main {
     
     public static final int MOUSE_CLICK  = 4; //                  [mouse button]
     
-    private static boolean doAction(HashMap<String, String> args) {
+    private static void doAction(Map<String, String> args) {
         switch(Integer.parseInt(args.get("action"))) {
             case VOLUME_SET:
                 //PCFunctions.volumeSet(Integer.parseInt(args.get("arg1")));
@@ -776,7 +779,6 @@ public class Main {
                         Double.parseDouble(args.get("arg1")),
                         Double.parseDouble(args.get("arg2")));*/
                 System.out.println("MOUSE_MOVEBY");
-                return false;
             case MOUSE_MOVETO:
                 /*PCFunctions.mouseMoveTo(
                         Integer.parseInt(args.get("arg1")),
@@ -789,7 +791,12 @@ public class Main {
                 System.out.println("MOUSE_CLICK");
                 break;
         }
-        return true;
+    }
+    
+    public void printMessage(String line) {
+        Calendar cal = Calendar.getInstance();
+        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+        System.out.println(sdf.format(cal.getTime()) + "   " + line);
     }
     
 }

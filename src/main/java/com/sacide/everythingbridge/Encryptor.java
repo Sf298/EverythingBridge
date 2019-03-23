@@ -79,7 +79,7 @@ public class Encryptor {
         for(int i=0; i<str.length(); i++) {
             int inC = str.charAt(i);
             int inK = key.charAt((i+inKStep)%key.length());
-            int val = (i*3) % key.length() / 2;
+            int val = (i*3+1) % key.length() / 2;
             
             int decryped = (128 + inC - inK - val) % 128;
             out.append((char)decryped);

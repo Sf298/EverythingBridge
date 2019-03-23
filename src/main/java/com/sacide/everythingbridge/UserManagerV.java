@@ -38,6 +38,11 @@ public class UserManagerV {
     public UserManagerV() {
         users = new Properties(new File("./users.prop"));
         users.load(encryptionKey);
+        System.out.println(encryptionKey);
+        /*
+        Zf6j0V2HKgkk9tLarewYG
+        
+        */
     }
     
     public void show(JFrame parentFrame) {
@@ -86,8 +91,8 @@ public class UserManagerV {
                 buttonPanel.add(removeButton);
             mainPanel.add(buttonPanel, BorderLayout.SOUTH);
         
-        map2Table();
         final JComponent[] inputs = new JComponent[] {mainPanel};
+        map2Table();
         JOptionPane.showConfirmDialog(parentFrame, inputs, "User Manager", JOptionPane.PLAIN_MESSAGE);
         tableToMap();
         users.save(encryptionKey);
