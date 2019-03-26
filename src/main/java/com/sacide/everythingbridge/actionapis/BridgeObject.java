@@ -28,6 +28,10 @@ public class BridgeObject {
         this.id = id;
     }
     
+    public BridgeObject(BridgeObject b) {
+        this(b.name, b.ip, b.mac, b.id);
+    }
+    
     public BridgeObject(JSONObject obj) {
         this.id = obj.getString("id");
         this.ip = obj.getString("internalipaddress");
