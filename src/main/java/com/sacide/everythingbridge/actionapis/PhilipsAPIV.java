@@ -40,41 +40,49 @@ import org.json.*;
  */
 public final class PhilipsAPIV {
     
-    private final String DISCOVER_URL = "https://discovery.meethue.com/";
+    private final String DISCOVERY_URL = "https://discovery.meethue.com/";
     private HashMap<String, BridgeObject> bridges;
     private String selectedBridgeMAC;           //*
     
     private String username = "";               //*
     
     private int status = 0;
-    private static final int STATUS_DICONNECTED = 0;
-    private static final int STATUS_GOT_BRIDGES = 1;
-    private static final int STATUS_BRIDGE_SELECTED = 2;
-    private static final int STATUS_GOT_USERNAME = 3;
+    public static final int STATUS_DICONNECTED = 0;
+    public static final int STATUS_GOT_BRIDGES = 1;
+    public static final int STATUS_BRIDGE_SELECTED = 2;
+    public static final int STATUS_GOT_USERNAME = 3;
     
     private final Window parentWindow;
     private final Properties saveFile; // username, selected bridge mac
     
-    public PhilipsAPIV(Window parentWindow) throws IOException {
+    /**
+     * Creates a PhilipsAPIV Object.
+     * @param parentWindow The parent window to freeze when show() is called.
+     */
+    public PhilipsAPIV(Window parentWindow) {
+        this(parentWindow, new File("./philips.prop"));
+    }
+    
+    /**
+     * Creates a PhilipsAPIV Object.
+     * @param parentWindow The parent window to freeze when show() is called.
+     * @param persistenceFile The file in which to store the username and preferred bridge mac. 
+     */
+    public PhilipsAPIV(Window parentWindow, File persistenceFile) {
         this.parentWindow = parentWindow;
-        saveFile = new Properties(new File("./philips.prop"));
+        saveFile = new Properties(persistenceFile);
         if(saveFile.fileExists()) {
-            saveFile.load();
-            discoverBridges();
-            
-            username = saveFile.get("username");
-            if(bridges.containsKey(saveFile.get("selectedBridgeMAC"))) {
-                selectedBridgeMAC = saveFile.get("selectedBridgeMAC");
-            }
-            
-            checkUsernameValid();
+            load();
         } else {
             discoverBridges();
             System.out.println("WARNING: Philips API not setup!");
-            saveFile.save();
+            save();
         }
     }
     
+    /**
+     * Shows a UI for editing the settings.
+     */
     public void show() {
         discoverBridges();
         
@@ -135,9 +143,12 @@ public final class PhilipsAPIV {
         saveFile.save();
     }
     
+    /**
+     * Updates the cache available bridges.
+     */
     public void discoverBridges() {
         try {
-            String str = getFromHttps(new URL(DISCOVER_URL));
+            String str = getFromHttps(new URL(DISCOVERY_URL));
             JSONArray objs = new JSONArray(str);
             bridges.clear();
             for(int i=0; i<objs.length(); i++) {
@@ -155,6 +166,9 @@ public final class PhilipsAPIV {
                 selectedBridgeMAC = "";
                 setStatus(STATUS_DICONNECTED);
             }
+            if(!bridges.containsKey(selectedBridgeMAC)) {
+                selectedBridgeMAC = "";
+            }
         } catch (MalformedURLException ex) {
             Logger.getLogger(PhilipsAPIV.class.getName()).log(Level.SEVERE, null, ex);
         } catch (IOException ex) {
@@ -162,6 +176,10 @@ public final class PhilipsAPIV {
         }
     }
     
+    /**
+     * Initiates the routine for creating the username (API key).
+     * Must be called within 30 sec of pressing the physical button on the bridge.
+     */
     public void createUsername() {
         try {
             String bridgeIP = bridges.get(selectedBridgeMAC).ip;
@@ -173,6 +191,9 @@ public final class PhilipsAPIV {
         }
     }
     
+    /**
+     * Checks if the current provided username works and updates the status accordingly.
+     */
     private void checkUsernameValid() {
         if(status < STATUS_BRIDGE_SELECTED)
             return;
@@ -191,11 +212,59 @@ public final class PhilipsAPIV {
             
     }
     
+    /**
+     * Gets the status of the connection to the bridge.
+     * @return The status.
+     */
+    public int getStatus() {
+        return status;
+    }
+    
+    /**
+     * Gets the currently stored username (API key)
+     * @return The username.
+     */
+    public String getUsername() {
+        return username;
+    }
+    
+    /**
+     * Gets the MAC address of the currently selected bridge.
+     * @return The MAC address.
+     */
+    public String getSelectedBridgeMAC() {
+        return selectedBridgeMAC;
+    }
+    
+    /**
+     * Sets the currently used bridge to the given MAC address.
+     * Only works if the given address is available.
+     * @param mac The MAC address.
+     * @return Whether or not the operation was successful.
+     */
+    public boolean setSelectedBridgeMAC(String mac) {
+        discoverBridges();
+        if(!bridges.containsKey(mac))
+            return false;
+        selectedBridgeMAC = mac;
+        return true;
+    }
+    
+    /**
+     * Gets a copy of the list of available bridges.
+     * @return The list of available bridges.
+     */
+    public HashMap<String, BridgeObject> getAvailableBridges() {
+        return new HashMap<>(bridges);
+    }
+    
+    /**
+     * Gets a list of available lights from the bridge.
+     * @return The JSONObject as received from the bridge. Refer to the Hue API.
+     */
     public JSONObject getLights() {
         try {
-            String bridgeIP = bridges.get(selectedBridgeMAC).ip;
-            URL url = new URL("http://"+bridgeIP+"/api/"+username+"/lights");
-            return new JSONObject(makeAPIRequest(url, "GET"));
+            return new JSONObject(makeAPIRequest("/api/"+username+"/lights", "GET"));
         } catch (IOException ex) {
             Logger.getLogger(PhilipsAPIV.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -203,26 +272,29 @@ public final class PhilipsAPIV {
     }
     
     /**
-     * sample properties: ("hue", 50000, "on", true, "bri", 200, "effect", "colorloop")
-     * @param id
-     * @param properties
-     * @return 
+     * Sets the properties for a light.
+     * Sample properties: ("hue", 50000, "on", true, "bri", 200, "effect", "colorloop")
+     * @param id The light ID. Can be found using getLights().
+     * @param properties The properties to change. Refer to the Hue API.
+     * @return The JSONObject as received from the bridge. Refer to the Hue API.
      */
     public JSONObject setLightProps(int id, String... properties) {
         try {
-            String bridgeIP = bridges.get(selectedBridgeMAC).ip;
-            URL url = new URL("http://"+bridgeIP+"/api/"+username+"/lights/"+id+"/state");
-            return new JSONObject(makeAPIRequest(url, "PUT"), properties);
+            return new JSONObject(makeAPIRequest("/api/"+username+"/lights/"+id+"/state", "PUT"), properties);
         } catch (IOException ex) {
             Logger.getLogger(PhilipsAPIV.class.getName()).log(Level.SEVERE, null, ex);
         }
         return null;
     }
+    
+    /**
+     * Sets the list of all properties of a light.
+     * @param id The light ID. Can be found using getLights().
+     * @return The JSONObject as received from the bridge. Refer to the Hue API.
+     */
     public JSONObject getLightProps(int id) {
         try {
-            String bridgeIP = bridges.get(selectedBridgeMAC).ip;
-            URL url = new URL("http://"+bridgeIP+"/api/"+username+"/lights/"+id);
-            return new JSONObject(makeAPIRequest(url, "GET"));
+            return new JSONObject(makeAPIRequest("/api/"+username+"/lights/"+id, "GET"));
         } catch (IOException ex) {
             Logger.getLogger(PhilipsAPIV.class.getName()).log(Level.SEVERE, null, ex);
         }
@@ -231,6 +303,14 @@ public final class PhilipsAPIV {
     
     private static final long REQUEST_FREQ_TIME = 100;
     private static long nextRequestTime = 0;
+    /**
+     * Sends a request and receives a response.
+     * @param url The url to send the request to.
+     * @param method The HTTP method to use.
+     * @param properties The properties to include in the body.
+     * @return The String response as received from the bridge. Refer to the Hue API. 
+     * @throws If an I/O error occurs.
+     */
     private static String makeAPIRequest(URL url, String method, String... properties) throws IOException {
         if(System.currentTimeMillis() < nextRequestTime) {
             try {
@@ -261,6 +341,20 @@ public final class PhilipsAPIV {
         nextRequestTime = System.currentTimeMillis() + REQUEST_FREQ_TIME;
         return sb.toString();
     }
+    /**
+     * Sends a request and receives a response.
+     * @param context The context to send the request to.
+     * @param method The HTTP method to use.
+     * @param properties The properties to include in the body.
+     * @return The String response as received from the bridge. Refer to the Hue API. 
+     * @throws If an I/O error occurs.
+     */
+    public String makeAPIRequest(String context, String method, String... properties) throws IOException {
+        String bridgeIP = bridges.get(selectedBridgeMAC).ip;
+        return makeAPIRequest(new URL("http://"+bridgeIP+ (context.startsWith("/")?"":"/") +context), method, properties);
+    }
+    
+    
     private static String properties2body(String... properties) {
         StringBuilder body = new StringBuilder("{");
             for(int i=0; i<properties.length; i+=2) {
@@ -289,11 +383,36 @@ public final class PhilipsAPIV {
             actionListener.actionPerformed(new ActionEvent(this, status, "", status));
         }
     }
+    
+    /**
+     * Adds an ActionListener that is called when the connection status is updated.
+     * @param l The listener to add
+     */
     public void addStatusChangeListener(ActionListener l) {
         statusChangeListeners.add(l);
     }
+    /**
+     * Removes the ActionListener.
+     * @param l The listener to remove
+     */
     public void removeStatusChangeListener(ActionListener l) {
         statusChangeListeners.remove(l);
     }
     
+    public void save() {
+        saveFile.put("username", username);
+        saveFile.put("selectedBridgeMAC", selectedBridgeMAC);
+        saveFile.save();
+    }
+    public void load() {
+        saveFile.load();
+        discoverBridges();
+
+        username = saveFile.get("username");
+        if(bridges.containsKey(saveFile.get("selectedBridgeMAC"))) {
+            selectedBridgeMAC = saveFile.get("selectedBridgeMAC");
+        }
+
+        checkUsernameValid();
+    }
 }
