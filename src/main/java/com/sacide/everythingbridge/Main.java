@@ -1,5 +1,6 @@
 package com.sacide.everythingbridge;
 
+import com.sacide.everythingbridge.actionapis.PhilipsAPIV;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Map;
@@ -13,6 +14,7 @@ public class Main {
     public static final String VERSION = "V0.1";
     private static UserManagerV um = new UserManagerV();
     private static ParamEditorV pe = new ParamEditorV();
+    private static PhilipsAPIV hue = new PhilipsAPIV();
     
     public static void main(String[] progArgs) {
         //System.out.println(new File("/users.prop").getAbsolutePath());
@@ -97,7 +99,7 @@ public class Main {
                 return 0;
             });
             
-            SHTMLServerGUI gui = new SHTMLServerGUI(server, um, pe);
+            SHTMLServerGUI gui = new SHTMLServerGUI(server, um, pe, hue);
             gui.setIcon("./PC Controller Icon.png");
             gui.show();
         } catch(Exception ex) {

@@ -52,15 +52,14 @@ public final class PhilipsAPIV {
     public static final int STATUS_BRIDGE_SELECTED = 2;
     public static final int STATUS_GOT_USERNAME = 3;
     
-    private final Window parentWindow;
     private final Properties saveFile; // username, selected bridge mac
     
     /**
      * Creates a PhilipsAPIV Object.
      * @param parentWindow The parent window to freeze when show() is called.
      */
-    public PhilipsAPIV(Window parentWindow) {
-        this(parentWindow, new File("./philips.prop"));
+    public PhilipsAPIV() {
+        this(new File("./philips.prop"));
     }
     
     /**
@@ -68,8 +67,7 @@ public final class PhilipsAPIV {
      * @param parentWindow The parent window to freeze when show() is called.
      * @param persistenceFile The file in which to store the username and preferred bridge mac. 
      */
-    public PhilipsAPIV(Window parentWindow, File persistenceFile) {
-        this.parentWindow = parentWindow;
+    public PhilipsAPIV(File persistenceFile) {
         saveFile = new Properties(persistenceFile);
         if(saveFile.fileExists()) {
             load();
@@ -83,7 +81,7 @@ public final class PhilipsAPIV {
     /**
      * Shows a UI for editing the settings.
      */
-    public void show() {
+    public void show(Window parentWindow) {
         discoverBridges();
         
         JPanel mainPanel = new JPanel(new BorderLayout());
