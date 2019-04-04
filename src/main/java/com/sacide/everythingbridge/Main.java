@@ -1,25 +1,7 @@
 package com.sacide.everythingbridge;
 
-import LifxCommander.ControlMethods;
-import LifxCommander.Messages.DataTypes.Command;
-import LifxCommander.Messages.DataTypes.HSBK;
-import LifxCommander.Messages.Device.*;
-import LifxCommander.Messages.Light.SetColor;
-import LifxCommander.Messages.Light.SetPower_Light;
-import LifxCommander.Values.Hue;
-import LifxCommander.Values.Levels;
-import LifxCommander.Values.Power;
-import com.sacide.everythingbridge.actionapis.Device;
-import com.sacide.everythingbridge.actionapis.LIFXAPI;
-import com.sacide.everythingbridge.actionapis.LifxCommanderW;
-import com.sf298.saudstoolbox.PacketBuilder;
 import com.sacide.everythingbridge.actionapis.PhilipsAPIV;
-import java.io.IOException;
-import java.math.BigInteger;
-import java.net.DatagramPacket;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Map;
 import java.util.logging.Level;
