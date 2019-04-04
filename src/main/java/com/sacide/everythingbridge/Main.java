@@ -1,7 +1,25 @@
 package com.sacide.everythingbridge;
 
+import LifxCommander.ControlMethods;
+import LifxCommander.Messages.DataTypes.Command;
+import LifxCommander.Messages.DataTypes.HSBK;
+import LifxCommander.Messages.Device.*;
+import LifxCommander.Messages.Light.SetColor;
+import LifxCommander.Messages.Light.SetPower_Light;
+import LifxCommander.Values.Hue;
+import LifxCommander.Values.Levels;
+import LifxCommander.Values.Power;
+import com.sacide.everythingbridge.actionapis.Device;
+import com.sacide.everythingbridge.actionapis.LIFXAPI;
+import com.sacide.everythingbridge.actionapis.LifxCommanderW;
+import com.sf298.saudstoolbox.PacketBuilder;
 import com.sacide.everythingbridge.actionapis.PhilipsAPIV;
+import java.io.IOException;
+import java.math.BigInteger;
+import java.net.DatagramPacket;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Map;
 import java.util.logging.Level;
@@ -12,11 +30,14 @@ public class Main {
     
     public static final String JAR_NAME = "PC Controller.jar";
     public static final String VERSION = "V0.1";
-    private static UserManagerV um = new UserManagerV();
-    private static ParamEditorV pe = new ParamEditorV();
-    private static PhilipsAPIV hue = new PhilipsAPIV();
+    private static UserManagerV um;
+    private static ParamEditorV pe;
+    private static PhilipsAPIV hue;
     
-    public static void main(String[] progArgs) {
+    public static void main(String[] progArgs) throws InterruptedException {
+        um = new UserManagerV();
+        pe = new ParamEditorV();
+        hue = new PhilipsAPIV();
         //System.out.println(new File("/users.prop").getAbsolutePath());
         try {
             SHTMLServer server = new SHTMLServer(8889, 
