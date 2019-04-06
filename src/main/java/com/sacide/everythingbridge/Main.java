@@ -1,7 +1,5 @@
 package com.sacide.everythingbridge;
 
-import com.sacide.everythingbridge.actionapis.LifxCommanderW;
-import com.sacide.everythingbridge.actionapis.PhilipsAPIV;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Map;
@@ -15,17 +13,13 @@ public class Main {
     public static final String VERSION = "V0.1";
     private static UserManagerV um;
     private static ParamEditorV pe;
-    private static PhilipsAPIV hue;
+    //private static PhilipsAPIV hue;
     
     public static void main(String[] progArgs) throws InterruptedException {
         
-        LifxCommanderW.test();
-        System.exit(0);
-        
-        
         um = new UserManagerV();
         pe = new ParamEditorV();
-        hue = new PhilipsAPIV();
+        //hue = new PhilipsAPIV();
         //System.out.println(new File("/users.prop").getAbsolutePath());
         try {
             SHTMLServer server = new SHTMLServer(8889, 
@@ -108,7 +102,7 @@ public class Main {
                 return 0;
             });
             
-            SHTMLServerGUI gui = new SHTMLServerGUI(server, um, pe, hue);
+            SHTMLServerGUI gui = new SHTMLServerGUI(server, um, pe/*, hue*/);
             gui.setIcon("./PC Controller Icon.png");
             gui.show();
         } catch(Exception ex) {

@@ -5,7 +5,6 @@
  */
 package com.sacide.everythingbridge;
 
-import com.sacide.everythingbridge.actionapis.PhilipsAPIV;
 import java.awt.BorderLayout;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
@@ -39,13 +38,13 @@ public class SHTMLServerGUI {
     private Thread t = null;
     public UserManagerV um;
     public ParamEditorV pe;
-    public PhilipsAPIV hue;
+    //public PhilipsAPIV hue;
     
-    public SHTMLServerGUI(SHTMLServer server, UserManagerV um, ParamEditorV pe, PhilipsAPIV hue) {
+    public SHTMLServerGUI(SHTMLServer server, UserManagerV um, ParamEditorV pe/*, PhilipsAPIV hue*/) {
         this.server = server;
         this.um = um;
         this.pe = pe;
-        this.hue = hue;
+        //this.hue = hue;
         this.frame = new JFrame("Server "+Main.VERSION);
         
         JMenuBar menubar = new JMenuBar();
@@ -70,7 +69,7 @@ public class SHTMLServerGUI {
                 JMenuItem hueMenuItem = new JMenuItem("Philips Hue Manager");
                 hueMenuItem.setToolTipText("Change and setup connections with the Philips Hue Bridge");
                 hueMenuItem.addActionListener((ActionEvent event) -> {
-                    hue.show(frame);
+                    //hue.show(frame);
                     System.out.println("Updated parameters");
                 });
                 file.add(hueMenuItem);
