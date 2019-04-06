@@ -1,5 +1,6 @@
 package com.sacide.everythingbridge;
 
+import com.sacide.everythingbridge.actionapis.LifxCommanderW;
 import com.sacide.everythingbridge.actionapis.PhilipsAPIV;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -17,6 +18,11 @@ public class Main {
     private static PhilipsAPIV hue;
     
     public static void main(String[] progArgs) throws InterruptedException {
+        
+        LifxCommanderW.test();
+        System.exit(0);
+        
+        
         um = new UserManagerV();
         pe = new ParamEditorV();
         hue = new PhilipsAPIV();

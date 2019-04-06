@@ -18,6 +18,10 @@ public class HSBK {
     public static final HSBK LIGHT_GREEN = new HSBK(21845, 25883, -1, 7500);
     public static final HSBK FOREST_GREEN = new HSBK(21845, 49504, -1, 7500);
     
+    private static HSBK[] colorList = new HSBK[] {DAYLIGHT, COOL_WHITE,
+        ALICE_BLUE, INCANDESCENT, CRIMSON, MAGENTA, INDIGO, LIGHT_SKY_BLUE,
+        AZURE, AQUAMARINE, LIGHT_GREEN, FOREST_GREEN};
+    
     private static HSBK getFromName(String name) {
         name = name.toLowerCase().replaceAll("[^a-z]", "");
         switch(name) {
@@ -36,6 +40,9 @@ public class HSBK {
         }
         throw new RuntimeException("Colour not found");
     }
+    public static HSBK random() {
+        return colorList[(int)(Math.random()*colorList.length)];
+    }
     
     /*public static final HSBK IVORY = new HSBK(9209, 0, 30801, 6000);
     public static final HSBK DAYLIGHT = new HSBK(9209, 0, 30801, 5000);
@@ -47,7 +54,12 @@ public class HSBK {
     public static final HSBK GHOST_WHITE = new HSBK(9209, 0, 30801, 7000);
     public static final HSBK ALICE_BLUE = new HSBK(9209, 0, 30801, 7500);*/
     
-
+    
+    public static final double MAX_HUE = Levels.MAX;
+    public static final double MAX_SAT = Levels.MAX;
+    public static final double MAX_BRI = Levels.MAX;
+    public static final double MIN_KEL = Kelvin.WARMEST;
+    public static final double MAX_KEL = Kelvin.COOLEST;
     int hue;		// 16-Bits
     int saturation;	// 16-Bits
     int brightness;	// 16-Bits
@@ -72,37 +84,61 @@ public class HSBK {
         this(getFromName(name));
     }
 
-    public int getHue() {
-            return hue;
+    public boolean hasEmpty() {
+        return getHue()==-1 || getSaturation()==-1 || getBrightness()==-1 || getKelvin()==-1;
     }
-
+    public void updateEmptyWith(HSBK hsbk) {
+        if(getHue()==-1) setHue(hsbk.getHue());
+        if(getSaturation()==-1) setSaturation(hsbk.getSaturation());
+        if(getBrightness()==-1) setBrightness(hsbk.getBrightness());
+        if(getKelvin()==-1) setKelvin(hsbk.getKelvin());
+    }
+    
+    public int getHue() {
+        return hue;
+    }
+    public int getHue(int scaleMax) {
+        return (int)Math.round(hue/MAX_HUE*scaleMax);
+    }
     public void setHue(int hue) {
-            this.hue = hue;
+        this.hue = hue;
+    }
+    public void setHue(int hue, int scaleMax) {
+        this.hue = (int) (hue/(double)scaleMax * MAX_HUE);
     }
 
     public int getSaturation() {
             return saturation;
     }
-
+    public int getSaturation(int scaleMax) {
+        return (int)Math.round(saturation/MAX_SAT*scaleMax);
+    }
     public void setSaturation(int saturation) {
-            this.saturation = saturation;
+        this.saturation = saturation;
+    }
+    public void setSaturation(int saturation, int scaleMax) {
+        this.saturation = (int) (saturation/(double)scaleMax * MAX_SAT);
     }
 
     public int getBrightness() {
             return brightness;
     }
-
+    public int getBrightness(int scaleMax) {
+        return (int)Math.round(brightness/MAX_BRI*scaleMax);
+    }
     public void setBrightness(int brightness) {
-            this.brightness = brightness;
+        this.brightness = brightness;
+    }
+    public void setBrightness(int brightness, int scaleMax) {
+        this.brightness = (int) (brightness/(double)scaleMax * MAX_BRI);
     }
 
     public int getKelvin() {
-            return kelvin;
+        return kelvin;
     }
-
     public void setKelvin(int kelvin) {
-		this.kelvin = kelvin;
-	}
+        this.kelvin = kelvin;
+    }
 
     @Override
     public String toString() {

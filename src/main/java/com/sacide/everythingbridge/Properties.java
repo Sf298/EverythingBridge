@@ -63,7 +63,7 @@ public class Properties {
     }
     
     public void put(String key, String value) {
-        map.put(key, value);
+        map.put(key, value==null?"":value);
     }
     
     public String remove(String key) {
