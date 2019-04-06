@@ -153,7 +153,7 @@ public class LifxCommanderW implements IActionAPI {
             }
             @Override
             public void setLightBrightness(double brightness, long duration) throws IOException {
-                ((RGBLightDevice)d).setLightColor(new HSBK(-1, -1, (int) (Levels.MAX*brightness), -1), duration);
+                setLightColor(new HSBK(-1, -1, (int)(Levels.MAX*brightness), -1), duration);
             }
             @Override
             public HSBK getLightColor() throws IOException {
