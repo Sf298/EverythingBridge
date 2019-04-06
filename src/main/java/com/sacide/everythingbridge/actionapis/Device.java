@@ -12,16 +12,19 @@ import java.util.Objects;
  * @author saud
  */
 public class Device {
-    public String ip;
+    public String ip_id;
     public int port;
     public String label;
-    public Device(String ip, int port, String label) {
-        this.ip = ip;
+    public Device(String ip_id, int port, String label) {
+        this.ip_id = ip_id;
         this.port = port;
         this.label = label;
     }
-    public Device(String ip, int port) {
-        this(ip, port, null);
+    public Device(String ip_id, int port) {
+        this(ip_id, port, null);
+    }
+    public Device(Device d) {
+        this(d.ip_id, d.port, d.label);
     }
 
     @Override
@@ -31,7 +34,7 @@ public class Device {
     @Override
     public int hashCode() {
         int hash = 7;
-        hash = 89 * hash + Objects.hashCode(this.ip);
+        hash = 89 * hash + Objects.hashCode(this.ip_id);
         hash = 89 * hash + this.port;
         hash = 89 * hash + Objects.hashCode(this.label);
         return hash;
@@ -51,7 +54,7 @@ public class Device {
         if (this.port != other.port) {
             return false;
         }
-        if (!Objects.equals(this.ip, other.ip)) {
+        if (!Objects.equals(this.ip_id, other.ip_id)) {
             return false;
         }
         if (!Objects.equals(this.label, other.label)) {
@@ -61,7 +64,7 @@ public class Device {
     }
 
     public String toFormattedString() {
-        return label+" = "+ip+":"+port;
+        return label+" = "+ip_id+":"+port;
     }
 
 }

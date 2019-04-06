@@ -15,13 +15,8 @@ public interface IActionAPI {
     
     /**
      * Finds all available devices and stores them in a local cache.
+     * @return returns all devices stored in the local cache.
      */
-    public void discoverDevices();
-    
-    /**
-     * Gets all devices stored in the local cache.
-     * @return returns the devices.
-     */
-    public Collection<Device> getDevices();
+    public Collection<Device> discoverDevices();
     
 }

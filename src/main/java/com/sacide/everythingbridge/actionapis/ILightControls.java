@@ -7,6 +7,7 @@ package com.sacide.everythingbridge.actionapis;
 
 import LifxCommander.Messages.DataTypes.HSBK;
 import java.io.IOException;
+import javafx.scene.paint.Color;
 
 /**
  *
@@ -18,7 +19,7 @@ public interface ILightControls {
      * Turns device on or off.
      * @param d the device to interact with.
      * @param on if true, turns the device on.
-     * @param duration the animation time for the change.
+     * @param duration the animation time for the change. milliseconds
      * @throws java.io.IOException
      */
     public void setLightPowerState(Device d, boolean on, long duration) throws IOException;
@@ -26,7 +27,7 @@ public interface ILightControls {
     /**
      * Turns devices on or off.
      * @param on if true, turns the devices on.
-     * @param duration the animation time for the change.
+     * @param duration the animation time for the change. milliseconds
      * @throws java.io.IOException
      */
     public void broadcastLightPowerState(boolean on, long duration) throws IOException;
@@ -44,7 +45,7 @@ public interface ILightControls {
      * Changes the color of the given device.
      * @param d the device to interact with.
      * @param hsbk the color to change to. values set to -1 will not change.
-     * @param duration the animation time for the change.
+     * @param duration the animation time for the change. milliseconds
      * @throws java.io.IOException
      */
     public void setLightColor(Device d, HSBK hsbk, long duration) throws IOException;
@@ -53,6 +54,7 @@ public interface ILightControls {
      * Changes the color of the given device.
      * @param d the device to interact with.
      * @param brightness a value from 0 to 1 where 0 is the dimmest and 1 is the brightest
+     * @param duration the animation time for the change. milliseconds
      * @throws java.io.IOException
      */
     public void setLightBrightness(Device d, double brightness, long duration) throws IOException;
@@ -60,7 +62,7 @@ public interface ILightControls {
     /**
      * Broadcasts a color change instruction to the given color.
      * @param hsbk the color to change to. values set to -1 will not change.
-     * @param duration the animation time for the change.
+     * @param duration the animation time for the change. milliseconds
      * @throws java.io.IOException
      */
     public void broadcastLightColor(HSBK hsbk, long duration) throws IOException;
