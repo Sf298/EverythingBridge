@@ -1,0 +1,18 @@
+fk1pgCWnQri3Otw5sBjqj5BuSgsEl317jUrn-obC
+
+
+
+<!0--token--0>
+
+move site to resources
+
+
+log file
+command line interface not gui
+
+
+
+favs | devices | groups | rules
+  ^       V        V        V
+  |_______|________|________|
+

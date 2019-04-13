@@ -1,7 +1,9 @@
 package com.sacide.everythingbridge;
 
+import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -15,7 +17,7 @@ public class Main {
     private static ParamEditorV pe;
     //private static PhilipsAPIV hue;
     
-    public static void main(String[] progArgs) throws InterruptedException {
+    public static void main(String[] progArgs) throws InterruptedException, IOException {
         
         um = new UserManagerV();
         pe = new ParamEditorV();
@@ -26,7 +28,7 @@ public class Main {
                     pe.getParamAsString(ParamEditorV.SSL_KEY_FILE),
                     pe.getParamAsString(ParamEditorV.SSL_KEY_STORE_PASS),
                     pe.getParamAsString(ParamEditorV.SSL_KEYPASS));
-            server.addContext("/sendMessage.html", (HTTPServer.Request req, HTTPServer.Response resp) -> {
+            server.addContext("/sendMessage", (HTTPServer.Request req, HTTPServer.Response resp) -> {
                 int token = Integer.parseInt(req.getParams().getOrDefault("token","-1"));
                 if(!server.checkToken(token))
                     resp.sendError(403);
@@ -36,7 +38,37 @@ public class Main {
                 resp.close();
                 return 0;
             }, "POST");
-            server.addContext("/", (HTTPServer.Request req, HTTPServer.Response resp) -> {
+			server.addContext("/logout", (HTTPServer.Request req, HTTPServer.Response resp) -> { // process token and login credentials
+				Map<String, String> params = req.getParams();
+				if(params.containsKey("token")) {
+					try {
+						int token = Integer.parseInt(params.get("token"));
+						server.tokens.remove(token);
+					} catch(NumberFormatException ex) {}
+				}
+				resp.send(200, "done");
+				resp.close();
+				return 0;
+            }, "PUT");
+			server.addContext("/loginChecker", (HTTPServer.Request req, HTTPServer.Response resp) -> { // process token and login credentials
+				Map<String, String> params = req.getParams();
+				if(params.containsKey("token")) {
+					int token = Integer.parseInt(params.get("token"));
+					resp.send(200, String.valueOf(server.checkToken(token)));
+				} else if(params.containsKey("uname") && params.containsKey("psw")) {
+					if(um.checkPassword(params.get("uname"), params.get("psw")))
+						resp.send(200, String.valueOf(server.newToken()));
+					else
+						resp.send(200, "-1");
+				} else {
+					resp.sendError(403);
+				}
+				resp.close();
+				return 0;
+            }, "GET");
+			
+			WebPageLoader.addContextsToServer(server, um, pe);
+            /*server.addContext("/", (HTTPServer.Request req, HTTPServer.Response resp) -> {
                 resp.getHeaders().add("Content-Type", "text/html");
                 resp.send(200, getLoginPage());
                 resp.close();
@@ -100,7 +132,7 @@ public class Main {
                 resp.send(200, getVirtualJoystick());
                 resp.close();
                 return 0;
-            });
+            });*/
             
             SHTMLServerGUI gui = new SHTMLServerGUI(server, um, pe/*, hue*/);
             gui.setIcon("./PC Controller Icon.png");
@@ -209,7 +241,7 @@ public class Main {
                 "                    xmlHttp.send( null );\n" +
                 "                    return xmlHttp.responseText;\n" +
                 "                }\n" +
-                "            }, 1/"+pe.getParamAsString(ParamEditorV.MOUSE_DPI)+" * 1000);\n" +
+                "            }, 1/<!0--mouseDpi--0> * 1000);\n" +
                 "        </script>\n" +
                 
                 "        <iframe width=\"0\" height=\"0\" border=\"0\" name=\"dummyframe\" id=\"dummyframe\"></iframe>\n" +

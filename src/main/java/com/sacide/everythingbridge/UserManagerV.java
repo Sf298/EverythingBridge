@@ -12,17 +12,14 @@ import java.io.File;
 import java.util.Map;
 import javax.swing.JButton;
 import javax.swing.JComponent;
-import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JPasswordField;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableModel;
 
 /**
  *
@@ -103,7 +100,7 @@ public class UserManagerV {
         for (int row=0; row<model.getRowCount(); row++){
             String uname = model.getValueAt(row, 0).toString();
             String pword = model.getValueAt(row, 1).toString();
-            users.put(uname, pword);
+            users.put(uname.toLowerCase(), pword);
         }
     }
     
@@ -117,6 +114,7 @@ public class UserManagerV {
     }
     
     public boolean checkPassword(String uname, String pword) {
+		uname = uname.toLowerCase();
         return users.hasKey(uname) && users.get(uname).equals(pword);
     }
     
@@ -131,7 +129,7 @@ public class UserManagerV {
         };
         int result = JOptionPane.showConfirmDialog(null, inputs, "New User", JOptionPane.PLAIN_MESSAGE);
         if (result == JOptionPane.OK_OPTION) {
-            users.put(uname.getText(), pword.getText());
+            users.put(uname.getText().toLowerCase(), pword.getText());
         }
     }
     
@@ -156,7 +154,7 @@ public class UserManagerV {
         int result = JOptionPane.showConfirmDialog(null, inputs, "Edit User", JOptionPane.PLAIN_MESSAGE);
         if (result == JOptionPane.OK_OPTION) {
             users.remove(oldName);
-            users.put(uname.getText(), pword.getText());
+            users.put(uname.getText().toLowerCase(), pword.getText());
         }
     }
     
