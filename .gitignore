@@ -5,3 +5,4 @@
 /bin/
 *.keystore
 *.settings
+/.nb-gradle/

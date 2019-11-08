@@ -5,165 +5,210 @@
  */
 package com.sacide.everythingbridge;
 
-import java.awt.BorderLayout;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.io.File;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
-import javax.swing.JButton;
-import javax.swing.JComponent;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JOptionPane;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTable;
-import javax.swing.JTextField;
-import javax.swing.table.DefaultTableModel;
+import java.util.Random;
 
 /**
- *
+ * Performs all the passwords checking and token handling for users.
  * @author saud
  */
 public class UserManagerV {
     
-    private Properties users;
-    private DefaultTableModel model;
-    private JTable table;
-    private final String encryptionKey = Encryptor.genKey("npauvfnpfjlksmnvnpfd");
-    
-    public UserManagerV() {
-        users = new Properties(new File("./users.prop"));
-        users.load(encryptionKey);
-        System.out.println(encryptionKey);
-        /*
-        Zf6j0V2HKgkk9tLarewYG
-        
-        */
-    }
-    
-    public void show(JFrame parentFrame) {
-        JPanel mainPanel = new JPanel(new BorderLayout());
-            table = new JTable(
-                    new DefaultTableModel(new Object[1][2], new Object[] {"uname", "pword"}) {
-                        @Override
-                        public boolean isCellEditable(int row, int column) {
-                           return false;
-                        }
-                    }
-            );
+	public final HashMap<Integer, String> tokens = new HashMap<>();
+	private final Random r = new Random();
+	private final int HASH_LEN = Encryptor.hashSHA256("a", "a").length();
+	//private final String encryptionKey = Encryptor.genKey("npauvfnpfjlksmnvnpfd");
+	private Thread fileLoaderThread;
+	
+	private final Properties users;
+	public final String hashSalt;
+	private String fileEncryptorKey;
+	
+	/**
+	 * Creates a new user manager instance.
+	 * @param scanUserFile Whether to scan for changes in the users file every 10 sec.
+	 * @param hashSalt The salt to use when hashing the passwords.
+	 * @param fileEncryptorKey The key to use when encrypting the save file. If
+	 * null, the file is not encrypted.
+	 */
+	public UserManagerV(boolean scanUserFile, String hashSalt, String fileEncryptorKey) {
+		this(new File("./users.prop"), scanUserFile, hashSalt, fileEncryptorKey);
+	}
+	
+	/**
+	 * Creates a new user manager instance.
+	 * @param usersFile The file path to store the usernames and password hashes.
+	 * @param scanUserFile Whether to scan for changes in the users file every 10 sec.
+	 * @param hashSalt The salt to use when hashing the passwords.
+	 * @param fileEncryptorKey The key to use when encrypting the save file. If
+	 * null, the file is not encrypted.
+	 */
+	public UserManagerV(File usersFile, boolean scanUserFile, String hashSalt, String fileEncryptorKey) {
+		this.users = new Properties(usersFile, " = ");
+		this.hashSalt = hashSalt;
+		this.fileEncryptorKey = fileEncryptorKey;
+		if(!users.fileExists()) {
+			System.out.println("File 'users.prop' not found. Creating...");
+			users.save();
+		}
+		if(scanUserFile) {
+			fileLoaderThread = new Thread(new Runnable() {
+			@Override
+			public void run() {
+				while(!Thread.interrupted()) {
+					loadUserData();
+					try {
+						Thread.sleep(10*1000);
+					} catch (InterruptedException ex) {}
+				}
+			}
+		});
+		fileLoaderThread.start();
+		}
+		/*
+		Zf6j0V2HKgkk9tLarewYG
 
-            model = (DefaultTableModel) table.getModel();
-            mainPanel.add(new JScrollPane(table), BorderLayout.CENTER);
-
-            JPanel buttonPanel = new JPanel();
-                JButton addButton = new JButton("Add User");
-                addButton.addActionListener(new ActionListener() {
-                    @Override
-                    public void actionPerformed(ActionEvent e) {
-                        addUser();
-                        map2Table();
-                    }
-                });
-                buttonPanel.add(addButton);
-
-                JButton editButton = new JButton("Edit User");
-                editButton.addActionListener(new ActionListener() {
-                    @Override
-                    public void actionPerformed(ActionEvent e) {
-                        editUser();
-                        map2Table();
-                    }
-                });
-                buttonPanel.add(editButton);
-
-                JButton removeButton = new JButton("Remove User");
-                removeButton.addActionListener(new ActionListener() {
-                    @Override
-                    public void actionPerformed(ActionEvent e) {
-                        removeUser();
-                        map2Table();
-                    }
-                });
-                buttonPanel.add(removeButton);
-            mainPanel.add(buttonPanel, BorderLayout.SOUTH);
-        
-        final JComponent[] inputs = new JComponent[] {mainPanel};
-        map2Table();
-        JOptionPane.showConfirmDialog(parentFrame, inputs, "User Manager", JOptionPane.PLAIN_MESSAGE);
-        tableToMap();
-        users.save(encryptionKey);
-    }
-    
-    private void tableToMap() {
-        users.clear();
-        for (int row=0; row<model.getRowCount(); row++){
-            String uname = model.getValueAt(row, 0).toString();
-            String pword = model.getValueAt(row, 1).toString();
-            users.put(uname.toLowerCase(), pword);
-        }
-    }
-    
-    private void map2Table() {
-        model.setRowCount(0);
-        for (Map.Entry<String, String> en : users.getMap().entrySet()) {
-             Object key = en.getKey();
-             Object value = en.getValue();
-            model.addRow(new Object[] {key, value});
-        }
-    }
-    
-    public boolean checkPassword(String uname, String pword) {
+		*/
+	}
+	
+	/**
+	 * Loads data from the users file.
+	 */
+	public void loadUserData() {
+		users.load(fileEncryptorKey);
+		
+		HashSet<String> toHash = new HashSet<>(); // hash unhashed passwords
+		for(Map.Entry<String, String> entry : users.getMap().entrySet()) {
+			String key = entry.getKey();
+			String value = entry.getValue();
+			if(value.length() != HASH_LEN || value.matches("[^0-9a-f]")) { // check is hash
+				toHash.add(key);
+			}
+		}
+		for(String key : toHash) {
+			users.put(key, Encryptor.hashSHA256(users.get(key),"",hashSalt));
+		}
+		if(!toHash.isEmpty()) {
+			users.save(fileEncryptorKey);
+		}
+	}
+	
+	/**
+	 * Checks if the provided password matches the password stored.
+	 * @param uname The unique username for the user.
+	 * @param unsaltedHash The password, unsalted and pre-hashed with SHA-256.
+	 * @return Whether or not the password matches the stored password.
+	 */
+	public boolean checkPasswordHash(String uname, String unsaltedHash) {
 		uname = uname.toLowerCase();
-        return users.hasKey(uname) && users.get(uname).equals(pword);
+		return users.hasKey(uname) && users.get(uname).equals(Encryptor.hashSHA256(unsaltedHash,hashSalt));
+	}
+	
+	/**
+	 * Add a new user to the manager.
+	 * @param uname The username.
+	 * @param unsaltedHash The password, unsalted and pre-hashed with SHA-256.
+	 */
+	public void addUser(String uname, String unsaltedHash) {
+		users.put(uname, Encryptor.hashSHA256(unsaltedHash,hashSalt));
+		resetBatchSaveThread();
+	}
+	
+	/**
+	 * Remove a user from the manager.
+	 * @param uname The username.
+	 */
+	public void removeUser(String uname) {
+		users.remove(uname);
+		resetBatchSaveThread();
+	}
+	private Thread batchSaveThread;
+	private void resetBatchSaveThread() {
+		if(batchSaveThread != null) batchSaveThread.interrupt();
+		batchSaveThread = new Thread(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException ex) {
+					return;
+				}
+				users.save(fileEncryptorKey);
+			}
+		});
+		batchSaveThread.start();
+	}
+	
+	
+	/**
+	 * Get a new token for the given username.
+	 * @param uname A username that exists in the manager.
+	 * @return returns the new token, or -1 if the user does not exist.
+	 */
+	public int newToken(String uname) {
+		if(!users.hasKey(uname)) return -1;
+		
+		int t;
+		do {
+			t = r.nextInt(Integer.MAX_VALUE);
+		} while(tokens.keySet().contains(t));
+
+		tokens.put(t, uname);
+		return t;
+	}
+	
+	/**
+	 * Checks if a token has been issued.
+	 * @param token
+	 * @return 
+	 */
+	public boolean checkToken(int token) {
+		if(token == -1) return false;
+		return tokens.containsKey(token);
+	}
+	
+	/**
+	 * Removes all stored tokens.
+	 */
+	public void clearTokens() {
+		tokens.clear();
+	}
+	
+	/**
+	 * Removes the selected token.
+	 * @param token The token to remove.
+	 */
+	public void logout(int token) {
+		tokens.remove(token);
+	}
+	
+	/**
+	 * Logs out all tokens issued to a given user.
+	 * @param token Any token issued to the user.
+	 */
+	public void logoutUser(int token) {
+		String uname = tokens.get(token);
+		logoutUser(uname);
     }
-    
-    private void addUser() {
-        JTextField uname = new JTextField();
-        JTextField pword = new JTextField();
-        final JComponent[] inputs = new JComponent[] {
-                new JLabel("Username"),
-                uname,
-                new JLabel("Password"),
-                pword
-        };
-        int result = JOptionPane.showConfirmDialog(null, inputs, "New User", JOptionPane.PLAIN_MESSAGE);
-        if (result == JOptionPane.OK_OPTION) {
-            users.put(uname.getText().toLowerCase(), pword.getText());
-        }
-    }
-    
-    private void editUser() {
-        if(table.getSelectedRow() == -1)
-            return;
-        
-        String oldName = (String) model.getValueAt(table.getSelectedRow(), 0);
-        String oldPword = (String) model.getValueAt(table.getSelectedRow(), 1);
-        
-        JTextField uname = new JTextField();
-        uname.setText(oldName);
-        JTextField pword = new JTextField();
-        pword.setText(oldPword);
-        
-        final JComponent[] inputs = new JComponent[] {
-                new JLabel("Username"),
-                uname,
-                new JLabel("Password"),
-                pword
-        };
-        int result = JOptionPane.showConfirmDialog(null, inputs, "Edit User", JOptionPane.PLAIN_MESSAGE);
-        if (result == JOptionPane.OK_OPTION) {
-            users.remove(oldName);
-            users.put(uname.getText().toLowerCase(), pword.getText());
-        }
-    }
-    
-    private void removeUser() {
-        if(table.getSelectedRow() == -1)
-            return;
-        
-        String oldName = (String) model.getValueAt(table.getSelectedRow(), 0);
-        users.remove(oldName);
+	
+	/**
+	 * Logs out all tokens issued to a given user.
+	 * @param uname The username.
+	 */
+	public void logoutUser(String uname) {
+		HashSet<Integer> toRemove = new HashSet<>();
+		for(Map.Entry<Integer, String> entry : tokens.entrySet()) {
+			Integer key = entry.getKey();
+			String value = entry.getValue();
+			if(uname.equals(value))
+			toRemove.add(key);
+		}
+		for(Integer integer : toRemove) {
+			tokens.remove(integer);
+		}
     }
     
 }

@@ -17,10 +17,7 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
-import java.util.ArrayList;
 import java.util.Enumeration;
-import java.util.HashSet;
-import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.net.ssl.KeyManagerFactory;
@@ -34,16 +31,12 @@ import net.freeutils.httpserver.HTTPServer;
  */
 public class SHTMLServer {
     
-    public final HashSet<Integer> tokens = new HashSet<>();
-    
     private final int port;
     private final String keystoreFilename;
     private final String storepass;
     private final String keypass;
     private final HTTPServer server;
     private final HTTPServer.VirtualHost vhost;
-    
-    private Random r = new Random();
     
     public SHTMLServer(int port, String keystoreFilename, String storepass, String keypass) {
         this.port = port;
@@ -92,7 +85,7 @@ public class SHTMLServer {
         vhost.addContext(path, handler, methods);
     }
     
-    public String getIPAdresses() {
+    public static String getIPAdresses() {
         try {
             String out = "";
             Enumeration<NetworkInterface> nis = NetworkInterface.getNetworkInterfaces();
@@ -109,25 +102,6 @@ public class SHTMLServer {
             Logger.getLogger(SHTMLServer.class.getName()).log(Level.SEVERE, null, ex);
         }
         return null;
-    }
-    
-    public int newToken() {
-        int t;
-        do {
-            t = r.nextInt(Integer.MAX_VALUE);
-        } while(tokens.contains(t));
-        
-        tokens.add(t);
-        return t;
-    }
-    
-    public boolean checkToken(int token) {
-        if(token == -1) return false;
-        return tokens.contains(token);
-    }
-    
-    public void clearTokens() {
-        tokens.clear();
     }
     
 }

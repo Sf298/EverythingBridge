@@ -20,7 +20,7 @@ import java.util.logging.Logger;
 public class Encryptor {
     
     public static String genKey(String seed) {
-        long longSeed = bytes2long(hash(seed+"oiufhsou").getBytes());
+        long longSeed = bytes2long(hashSHA256(seed, "oiufhsou").getBytes());
         Random r = new Random(longSeed);
         int len = r.nextInt(17)+17;
         StringBuilder sb = new StringBuilder();
@@ -47,15 +47,29 @@ public class Encryptor {
         return buffer.getLong();
     }
     
-    public static String hash(String str) {
+    public static String hashSHA256(String str, String... salts) {
         try {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] encodedhash = digest.digest(str.getBytes(StandardCharsets.UTF_8));
-            return new String(encodedhash);
+			String out = str;
+			for(String salt : salts) {
+				out += salt;
+				out = bytesToHex(digest.digest(out.getBytes(StandardCharsets.UTF_8)));
+			}
+			return out;
         } catch (NoSuchAlgorithmException ex) {
             Logger.getLogger(Encryptor.class.getName()).log(Level.SEVERE, null, ex);
         }
         return null;
+    }
+    
+    private static String bytesToHex(byte[] hash) {
+	StringBuilder hexString = new StringBuilder();
+	for (int i = 0; i < hash.length; i++) {
+	    String hex = Integer.toHexString(0xff & hash[i]);
+	    if(hex.length() == 1) hexString.append('0');
+	    hexString.append(hex);
+	}
+	return hexString.toString();
     }
     
     public static String encrypt(String str, String key) {

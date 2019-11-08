@@ -30,7 +30,8 @@ dependencies {
     // https://mvnrepository.com/artifact/org.json/json
     compile group: 'org.json', name: 'json', version: '20180813'
     
-    compile 'com.github.Sf298:SRDB:master'
+    compile 'com.github.Sf298:SmartHomeApiCompilation:4de925fdb7e7a45931d38f6d7e4622a766752128'
+    
     // You can read more about how to add dependency here:
     //   http://www.gradle.org/docs/current/userguide/dependency_management.html#sec:how_to_declare_your_dependencies
     testCompile group: 'junit', name: 'junit', version: '4.10'

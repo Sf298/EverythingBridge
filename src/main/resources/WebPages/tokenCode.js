@@ -24,12 +24,23 @@ function setCookie(cname, cvalue, expireDays) {
 }
 function fillPageWithToken() {
     var links = document.getElementsByTagName("a");
-    var token = getCookie("everythingbridgetoken");
+    var token = getToken();
     var re = new RegExp("0twtcht4m"+"token"+"0thv303c");
     for(var i=0; i<links.length; i++) {
         links[i].href = links[i].href.replace(re, token);
     }
 }
+function getToken() {
+	var token = getCookie("everythingbridgetoken");
+	if(token.length > 0) return token;
+	return getUrlParameter("token");
+}
+function getUrlParameter(name) {
+    name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+    var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+    var results = regex.exec(window.location.search);
+    return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+};
 function logout() {
     var xhr = new XMLHttpRequest();
     xhr.open('PUT', "/logout?token="+getCookie("everythingbridgetoken"), true);

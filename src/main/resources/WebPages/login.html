@@ -25,7 +25,22 @@
 <body style="max-width:1600px">
     
     <script src="/tokenCode.js"></script>
-    <script type="text/javascript"> 
+    <script type="text/javascript">
+		function hexString(buffer) {
+			const byteArray = new Uint8Array(buffer);
+			const hexCodes = [...byteArray].map(value => {
+				const hexCode = value.toString(16);
+				const paddedHexCode = hexCode.padStart(2, '0');
+				return paddedHexCode;
+			});
+			return hexCodes.join('');
+		}
+		function digestMessage(message) {
+			const encoder = new TextEncoder();
+			const data = encoder.encode(message);
+			return window.crypto.subtle.digest('SHA-256', data);
+		}
+		
         var token = getCookie("everythingbridgetoken");
         if(token != "") {
             var xhr = new XMLHttpRequest();
@@ -47,21 +62,23 @@
             var pword = document.getElementsByName("psw")[0].value;
             var remember = document.getElementsByName("remember")[0].checked;
             
-            var xhr = new XMLHttpRequest();
-            xhr.open('GET', "/loginChecker?uname="+uname+"&psw="+pword, true);
-            xhr.send();
-            xhr.onreadystatechange = function (e) {
-                if (xhr.readyState == 4 && xhr.status == 200) {
-                    token = parseInt(xhr.responseText);
-                    if(token > -1) {
-                        if(remember)
-                            setCookie("everythingbridgetoken", token, 5);
-                        window.location.replace("/home.html?token="+token);
-                    } else {
-                        alert("Incorrect username or password!");
-                    }
-                }
-            };
+			digestMessage(pword).then(pwordHash => {
+				var xhr = new XMLHttpRequest();
+				xhr.open('GET', "/loginChecker?uname="+uname+"&pswHash="+hexString(pwordHash), true);
+				xhr.send();
+				xhr.onreadystatechange = function (e) {
+					if (xhr.readyState == 4 && xhr.status == 200) {
+						token = parseInt(xhr.responseText);
+						if(token > -1) {
+							if(remember)
+								setCookie("everythingbridgetoken", token, 5);
+							window.location.replace("/home.html?token="+token);
+						} else {
+							alert("Incorrect username or password!");
+						}
+					}
+				};
+			});
         }
     </script>
     
