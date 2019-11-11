@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<!--
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+-->
+<html>
+    <head>
+        <title>TODO supply a title</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    </head>
+    <body>
+        
+        <script type="text/javascript">
+            function updateBrightness() {
+                var element = document.getElementById("brightnessSlider")
+                var newVal = element.value;
+                var deviceID = getUrlParameter("deviceID");
+                var xhr = new XMLHttpRequest();
+                xhr.open('PUT', "/deviceAction?sessionID="+getSessionID()+"&deviceID="+deviceID+"&action=SetBrightness&newValue="+newVal, true);
+                xhr.send();
+                xhr.onreadystatechange = function (e) {
+                    if (xhr.readyState == 4 && xhr.status == 200) {
+                        
+                    }
+                };
+            }
+        </script>
+        <input name="lightBrightness" id="brightnessSlider" style="float:right; width:60%;" type="range" min="1" max="100" value="100" class="rangeslider">
+        
+    </body>
+</html>

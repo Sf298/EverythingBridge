@@ -30,7 +30,9 @@ dependencies {
     // https://mvnrepository.com/artifact/org.json/json
     compile group: 'org.json', name: 'json', version: '20180813'
     
-    compile 'com.github.Sf298:SmartHomeApiCompilation:4de925fdb7e7a45931d38f6d7e4622a766752128'
+    //compile 'com.github.Sf298:Sauds-Toolbox:7051109848be1e5bb0703d3943ae865e5199bf8b'
+    compile 'com.github.Sf298:SmartHomeApiCompilation:b240d1c15ce4f00d89df4c0740fd3f66bf0608ec'
+    compile 'com.github.Sf298:GenericServerHTTPS:fe8713e996a073e63cee4e227b7e1b361aafcef9'
     
     // You can read more about how to add dependency here:
     //   http://www.gradle.org/docs/current/userguide/dependency_management.html#sec:how_to_declare_your_dependencies

@@ -1,4 +1,4 @@
 SSL Keystore File = D:\Dropbox\Java Projects\EverythingBridge\src\main\resources\mykey.keystore
-SSL Keypass = abcdef
+SSL Keypass = 123456
 SSL Keystore Alias = alias
 SSL Keystore pass = 123456
